@@ -1,0 +1,14 @@
+name: dircd
+description: Dart Internet Relay Chat Daemon
+version: 1.0.0
+repository: https://github.com/kkazuo/dicrd
+
+environment:
+  sdk: ^3.2.0
+
+dependencies:
+  cuid2: ^3.1.0
+
+dev_dependencies:
+  lint: ^2.0.0
+  test: ^1.24.0
