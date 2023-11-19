@@ -35,6 +35,7 @@ class Client {
 
   bool _registered = false;
   bool _authenticating = false;
+  bool _capNegotiating = false;
   String? _connectPassword;
   String? _nick;
   UserInfo? _user;
@@ -64,7 +65,7 @@ class Client {
 
   bool get registered => _registered;
 
-  String? get nick => _registered ? _nick : null;
+  String get nick => _registered ? _nick! : '*';
 
   String get _fqun => '${_nick ?? '*'}'
       '!${_user?.user ?? '*'}'
@@ -131,6 +132,8 @@ class Client {
             return _onIson(event);
           case 'MOTD':
             return _onMotd(event);
+          case 'CAP':
+            return _onCap(event);
           case 'ERROR':
             return _onError(event);
           default:
@@ -257,6 +260,7 @@ class Client {
     final user = _user?.user;
     if (nick == null || user == null) return;
 
+    if (_capNegotiating) return;
     if (_authenticating) return;
     _authenticating = true;
     final (success, reason) = await _chatServer.authenticate(
@@ -291,7 +295,7 @@ class Client {
   }
 
   void _welcome() {
-    final to = nick ?? '*';
+    final to = nick;
     final servername = _chatServer.servername;
     const daemonVersion = 'dircd.1.0.0';
     const date = 'Thu Jan 1 1970 at 00:00:00 UTC';
@@ -321,13 +325,13 @@ class Client {
   }
 
   String printNumeric(NumericReply n) {
-    final to = nick ?? '*';
+    final to = nick;
     return ':${_chatServer.servername} ${Message.printNumeric(n)} $to';
   }
 
   void sendNumeric(NumericReply n) {
     final servername = _chatServer.servername;
-    final to = nick ?? '*';
+    final to = nick;
     final data = Message.encodeNumeric(servername, to, n, _encoding);
     sendRawData(data);
   }
@@ -338,7 +342,7 @@ class Client {
     String? text,
   }) {
     final servername = _chatServer.servername;
-    final to = nick ?? '*';
+    final to = nick;
     final data = Message.encodeNumericWith(
       servername,
       to,
@@ -551,5 +555,51 @@ class Client {
 
   void sendEndOfMotd() {
     sendNumeric(NumericReply.RPL_ENDOFMOTD);
+  }
+
+  void _onCap(Message event) {
+    if (event.params.isEmpty) {
+      sendNumeric(NumericReply.ERR_INVALIDCAPCMD);
+      return;
+    }
+
+    final capSubCommand = event.params.first;
+    switch (capSubCommand.toUpperCase()) {
+      case 'LS':
+        if (_registered) return;
+        return _onCapList(event, 'LS');
+      case 'LIST':
+        if (_registered) return;
+        return _onCapList(event, 'LIST');
+      case 'REQ':
+        if (_registered) return;
+        return _onCapReq(event);
+      case 'END':
+        if (_registered) return;
+        return _onCapEnd(event);
+      default:
+        sendNumericWith(NumericReply.ERR_INVALIDCAPCMD, [capSubCommand]);
+        return;
+    }
+  }
+
+  void _onCapList(Message event, String subCommand) {
+    _capNegotiating = true;
+
+    final data = _encoding.encode('CAP $nick $subCommand :\r\n');
+    sendRawData(data);
+  }
+
+  void _onCapReq(Message event) {
+    _capNegotiating = true;
+
+    final caps = event.params.lastOrNull ?? '';
+    final data = _encoding.encode('CAP $nick NAK :$caps\r\n');
+    sendRawData(data);
+  }
+
+  void _onCapEnd(Message event) {
+    _capNegotiating = false;
+    _tryRegistration();
   }
 }

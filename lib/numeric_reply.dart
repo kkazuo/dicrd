@@ -23,6 +23,7 @@ enum NumericReply {
   ERR_NOSUCHCHANNEL(403, 'No such channel'),
   ERR_TOOMANYTARGETS(407, '<error code> recipients. <abort message>'),
   ERR_NOORIGIN(409, 'No origin specified'),
+  ERR_INVALIDCAPCMD(410, 'Invalid CAP command'),
   ERR_NORECIPIENT(411, 'No recipient given'),
   ERR_NOTEXTTOSEND(412, 'No text to send'),
   ERR_NOTOPLEVEL(413, 'No toplevel domain specified'),

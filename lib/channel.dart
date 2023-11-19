@@ -53,5 +53,5 @@ class Channel {
     to.sendNumericWith(NumericReply.RPL_ENDOFNAMES, [name]);
   }
 
-  Iterable<String> get members => _clients.map((cl) => cl.nick!);
+  Iterable<String> get members => _clients.map((cl) => cl.nick);
 }

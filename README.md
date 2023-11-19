@@ -47,7 +47,7 @@ There is no configuration for now. Just run it.
 - [x] Configure the listen port number.
 - [x] Configure the listen interface address.
 - [x] Communicates with TLS (Secure Socket).
-- [ ] CAP capabilities negotiation mechanism.
+- [x] CAP capabilities negotiation mechanism.
 - [x] PASS authentication with fixed string.
 - [x] PASS authentication with custom subclassing.
 - [ ] SASL authentication.
