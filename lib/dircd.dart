@@ -31,10 +31,17 @@ class Server implements ChatServer {
     ConnectionAuth? connectionAuth,
     String? motdPath,
   })  : connectionAuth = connectionAuth ??
-            (connectionPassword != null
-                ? FixedStringConnectionAuth(password: connectionPassword)
-                : ConnectionAuth()),
+            _fixedServerPassword(connectionPassword) ??
+            ConnectionAuth(),
         _motdPath = motdPath ?? Platform.environment['IRCD_MOTD'];
+
+  static ConnectionAuth? _fixedServerPassword(String? connectionPassword) {
+    final password =
+        connectionPassword ?? Platform.environment['IRCD_PASSWORD'];
+    return password != null
+        ? FixedStringConnectionAuth(password: password)
+        : null;
+  }
 
   @override
   authenticate({required nick, required user, password}) =>

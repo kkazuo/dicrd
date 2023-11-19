@@ -28,6 +28,7 @@ There is no configuration for now. Just run it.
 | IRCD_PORT        | listen port         | 6667    |
 | IRCD_PRIVATE_KEY | TLS cert file path  |         |
 | IRCD_MOTD        | MOTD file path      |         |
+| IRCD_PASSWORD    | connection password |         |
 
 ## Functionality
 
