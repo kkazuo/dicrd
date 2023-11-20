@@ -12,6 +12,7 @@
 
 enum NumericReply {
   RPS_ISON(303, ''),
+  RPL_CHANNELMODEIS(324, ''),
   RPL_NOTOPIC(331, 'No topic is set'),
   RPL_TOPIC(332, '<topic>'),
   RPL_NAMREPLY(353, ''),
@@ -40,6 +41,7 @@ enum NumericReply {
   ERR_NEEDMOREPARAMS(461, 'Not enough parameters'),
   ERR_ALREADYREGISTRED(462, 'Unauthorized command (already registered)'),
   ERR_BADCHANNELKEY(475, 'Cannot join channel (+k)'),
+  ERR_NOCHANMODES(477, "Channel doesn't support modes"),
   ;
 
   final int code;

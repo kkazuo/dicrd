@@ -128,6 +128,10 @@ class Client {
             return _onJoin(event);
           case 'PART':
             return _onPart(event);
+          case 'MODE':
+            return _onMode(event);
+          case 'TOPIC':
+            return _onTopic(event);
           case 'ISON':
             return _onIson(event);
           case 'MOTD':
@@ -300,7 +304,7 @@ class Client {
     const daemonVersion = 'dircd.1.0.0';
     const date = 'Thu Jan 1 1970 at 00:00:00 UTC';
     const userMode = 'o';
-    const chanMode = 'm';
+    const chanMode = 'sn';
     final isupports = [
       'UTF8ONLY',
       'CASEMAPPING=ascii',
@@ -524,6 +528,12 @@ class Client {
 
     if (Message.isValidAsChannelName(msgto)) {
       // Send to the channel
+      final channel = _channels[msgto];
+      if (channel == null) {
+        sendNumericWith(NumericReply.ERR_NOTONCHANNEL, [msgto]);
+        return;
+      }
+
       _chatServer.broadcast(data(), from: this, to: msgto);
       return;
     }
@@ -555,6 +565,66 @@ class Client {
 
   void sendEndOfMotd() {
     sendNumeric(NumericReply.RPL_ENDOFMOTD);
+  }
+
+  void _onMode(Message event) {
+    if (!_registered) return;
+
+    print(event);
+
+    final channame = event.params.first;
+
+    if (!Message.isValidAsChannelName(channame)) {
+      sendNumericWith(NumericReply.ERR_NOSUCHCHANNEL, [channame]);
+      return;
+    }
+
+    final channel = _channels[channame.toLowerCase()];
+
+    if (channel == null) {
+      sendNumericWith(NumericReply.ERR_NOTONCHANNEL, [channame]);
+      return;
+    }
+
+    sendNumericWith(NumericReply.RPL_CHANNELMODEIS, [channame, '+n']);
+  }
+
+  void _onTopic(Message event) {
+    if (!_registered) return;
+    if (event.params.isEmpty) {
+      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      return;
+    }
+
+    final channame = event.params.first;
+
+    if (!Message.isValidAsChannelName(channame)) {
+      sendNumericWith(NumericReply.ERR_NOSUCHCHANNEL, [channame]);
+      return;
+    }
+
+    final channel = _channels[channame.toLowerCase()];
+
+    if (channel == null) {
+      sendNumericWith(NumericReply.ERR_NOTONCHANNEL, [channame]);
+      return;
+    }
+
+    if (event.params.length == 1) {
+      final topic = channel.topic;
+      if (topic == null) {
+        sendNumeric(NumericReply.RPL_NOTOPIC);
+      } else {
+        sendNumericWith(NumericReply.RPL_TOPIC, [channame], text: topic);
+      }
+      return;
+    }
+
+    final topic = event.params.last;
+    channel.topic = topic;
+
+    final data = _encoding.encode(':$_fqun TOPIC ${channel.name} :$topic\r\n');
+    channel.broadcast(data, from: this);
   }
 
   void _onCap(Message event) {

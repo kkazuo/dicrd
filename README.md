@@ -39,7 +39,7 @@ There is no configuration for now. Just run it.
 - [x] QUIT
 - [ ] MODE for channel.
 - [ ] MODE for user.
-- [ ] TOPIC
+- [x] TOPIC
 - [ ] INVITE / KICK
 - [x] MOTD
 - [ ] WHO / WHOIS / WHOWAS

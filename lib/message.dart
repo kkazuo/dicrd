@@ -58,9 +58,10 @@ class Message {
     String? text,
   }) {
     final code = _intToString(n.code);
-    final ps = params.join(' ');
-    final last = text ?? n.desc;
-    return encoding.encode(':$from $code $to $ps :$last\r\n');
+    final ps = params.isEmpty ? '' : ' ${params.join(' ')}';
+    final last = text ?? (n.desc.isNotEmpty ? n.desc : null);
+    final trail = last != null ? ' :$last' : '';
+    return encoding.encode(':$from $code $to$ps$trail\r\n');
   }
 
   static final _nickRe = RegExp(

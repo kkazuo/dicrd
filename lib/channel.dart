@@ -19,10 +19,21 @@ class Channel {
   final String? key;
   final _clients = HashSet<Client>.of([]);
 
+  String? _topic;
+
   Channel({required this.name, this.key});
 
   bool get isEmpty => _clients.isEmpty;
   List<Client> get clients => _clients.toList(growable: false);
+
+  String? get topic => _topic;
+  set topic(String? newTopic) {
+    if (newTopic == null || newTopic.isEmpty) {
+      _topic = null;
+    } else {
+      _topic = newTopic;
+    }
+  }
 
   bool add(Client user, {String? key}) {
     if (this.key != null && this.key != key) return false;
@@ -43,7 +54,11 @@ class Channel {
 
   void sendChannelInfo({required Client to}) {
     if (_clients.length > 1) {
-      to.sendNumericWith(NumericReply.RPL_NOTOPIC, [name]);
+      if (_topic != null) {
+        to.sendNumericWith(NumericReply.RPL_TOPIC, [name], text: _topic);
+      } else {
+        to.sendNumericWith(NumericReply.RPL_NOTOPIC, [name]);
+      }
     }
     final basePrefix = to.printNumeric(NumericReply.RPL_NAMREPLY);
     final prefix = '$basePrefix = $name :';
