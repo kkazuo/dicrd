@@ -304,7 +304,7 @@ class Client {
     const daemonVersion = 'dircd.1.0.0';
     const date = 'Thu Jan 1 1970 at 00:00:00 UTC';
     const userMode = 'o';
-    const chanMode = 'sn';
+    const chanMode = 'n';
     final isupports = [
       'UTF8ONLY',
       'CASEMAPPING=ascii',
@@ -528,12 +528,6 @@ class Client {
 
     if (Message.isValidAsChannelName(msgto)) {
       // Send to the channel
-      final channel = _channels[msgto];
-      if (channel == null) {
-        sendNumericWith(NumericReply.ERR_NOTONCHANNEL, [msgto]);
-        return;
-      }
-
       _chatServer.broadcast(data(), from: this, to: msgto);
       return;
     }
@@ -570,7 +564,10 @@ class Client {
   void _onMode(Message event) {
     if (!_registered) return;
 
-    print(event);
+    if (event.params.isEmpty) {
+      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      return;
+    }
 
     final channame = event.params.first;
 
@@ -586,7 +583,33 @@ class Client {
       return;
     }
 
-    sendNumericWith(NumericReply.RPL_CHANNELMODEIS, [channame, '+n']);
+    if (event.params.length == 1) {
+      final flags = channel.flags;
+      sendNumericWith(NumericReply.RPL_CHANNELMODEIS, [channame, flags]);
+      return;
+    }
+
+    final newFlags = event.params[1];
+    var changed = false;
+    switch (newFlags) {
+      case '+n':
+        changed = channel.setFlag('n', on: true);
+      case '-n':
+        changed = channel.setFlag('n', on: false);
+      default:
+        sendNumericWith(NumericReply.ERR_UNKNOWNMODE, [newFlags]);
+        return;
+    }
+
+    if (!changed) {
+      final flags = channel.flags;
+      sendNumericWith(NumericReply.RPL_CHANNELMODEIS, [channame, flags]);
+      return;
+    }
+
+    final flags = newFlags;
+    final data = _encoding.encode(':$_fqun MODE ${channel.name} $flags\r\n');
+    channel.broadcast(data, from: this);
   }
 
   void _onTopic(Message event) {

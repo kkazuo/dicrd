@@ -1,3 +1,7 @@
+## 1.3.0
+
+- Add MODE support partialy.
+
 ## 1.2.0
 
 - Add TOPIC support.

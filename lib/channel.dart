@@ -18,6 +18,7 @@ class Channel {
   final String name;
   final String? key;
   final _clients = HashSet<Client>.of([]);
+  final _flags = HashSet<String>.of([]);
 
   String? _topic;
 
@@ -32,6 +33,21 @@ class Channel {
       _topic = null;
     } else {
       _topic = newTopic;
+    }
+  }
+
+  bool isOnChannel({required Client client}) => _clients.contains(client);
+
+  String get flags => '+${_flags.join()}';
+
+  bool isFlagOn(String ch) => _flags.contains(ch);
+
+  bool setFlag(String ch, {required bool on}) {
+    // Return true when changed.
+    if (on) {
+      return _flags.add(ch);
+    } else {
+      return _flags.remove(ch);
     }
   }
 

@@ -200,6 +200,11 @@ class Server implements ChatServer {
       return;
     }
 
+    if (chan.isFlagOn('n') && !chan.isOnChannel(client: from)) {
+      from.sendNumericWith(NumericReply.ERR_NOTONCHANNEL, [to]);
+      return;
+    }
+
     chan.broadcast(data, from: from, echo: false);
   }
 
@@ -223,7 +228,9 @@ class Server implements ChatServer {
         return;
       }
     } else {
+      // Create new channel.
       chan = Channel(name: channel, key: key)..add(user, key: key);
+      chan.setFlag('n', on: true);
       _channels[channel] = chan;
     }
 
