@@ -45,7 +45,7 @@ There is no configuration for now. Just run it.
 - [x] MOTD
 - [ ] WHO / WHOIS / WHOWAS
 - [x] ISON
-- [ ] AWAY
+- [x] AWAY
 - [x] Configure the listen port number.
 - [x] Configure the listen interface address.
 - [x] Communicates with TLS (Secure Socket).

@@ -190,6 +190,12 @@ class Server implements ChatServer {
       return;
     }
 
+    final awayMsg = client.awayMsg;
+    if (awayMsg != null) {
+      from.sendNumericWith(NumericReply.RPL_AWAY, [to], text: awayMsg);
+      return;
+    }
+
     client.sendRawData(data);
   }
 

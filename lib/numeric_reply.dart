@@ -11,7 +11,10 @@
 */
 
 enum NumericReply {
+  RPL_AWAY(301, ''),
   RPS_ISON(303, ''),
+  RPL_UNAWAY(305, 'You are no longer marked as being away'),
+  RPL_NOWAWAY(306, 'You have been marked as being away'),
   RPL_CHANNELMODEIS(324, ''),
   RPL_NOTOPIC(331, 'No topic is set'),
   RPL_TOPIC(332, '<topic>'),

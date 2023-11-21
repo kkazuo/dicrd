@@ -1,3 +1,7 @@
+## 2.1.0
+
+- Add AWAY support.
+
 ## 2.0.0
 
 - Change public API. Use ServerConfig and SocketConfig.

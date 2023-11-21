@@ -134,6 +134,8 @@ class Client {
             return _onTopic(event);
           case 'ISON':
             return _onIson(event);
+          case 'AWAY':
+            return _onAway(event);
           case 'MOTD':
             return _onMotd(event);
           case 'CAP':
@@ -692,6 +694,22 @@ class Client {
 
     final data = _encoding.encode(':$_fqun TOPIC ${channel.name} :$topic\r\n');
     channel.broadcast(data, from: this);
+  }
+
+  String? _awayMsg;
+
+  String? get awayMsg => _awayMsg;
+
+  void _onAway(Message event) {
+    if (!_registered) return;
+
+    if (event.params.isEmpty) {
+      _awayMsg = null;
+      sendNumeric(NumericReply.RPL_UNAWAY);
+    } else {
+      _awayMsg = event.params.first;
+      sendNumeric(NumericReply.RPL_NOWAWAY);
+    }
   }
 
   void _onCap(Message event) {
