@@ -28,13 +28,21 @@ class SocketConfig {
     int? port,
     int? connectionCheckIntervalSeconds,
     String? privateKeyPath,
-  })  : address = address ??
-            InternetAddress(Platform.environment['IRCD_HOSTADDR'] ?? '0.0.0.0'),
+  })  : address = address ?? _defaultAddress(),
         port = port ?? _defaultNumber('IRCD_PORT', 6667),
         connectionCheckIntervalSeconds = connectionCheckIntervalSeconds ??
             _defaultNumber('IRCD_CONN_CHECK_INTERVAL', 30),
         privateKeyPath =
             privateKeyPath ?? Platform.environment['IRCD_PRIVATE_KEY'];
+
+  static InternetAddress _defaultAddress() {
+    final address = Platform.environment['IRCD_HOSTADDR'];
+    if (address != null) {
+      return InternetAddress(address);
+    } else {
+      return InternetAddress.anyIPv6;
+    }
+  }
 
   static int _defaultNumber(String key, int fallback) {
     final portStr = Platform.environment[key];

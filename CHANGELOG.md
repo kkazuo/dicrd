@@ -1,3 +1,7 @@
+## 2.3.0
+
+- Change default bind address to Any IPv6.
+
 ## 2.2.0
 
 - Add away-notify support.
