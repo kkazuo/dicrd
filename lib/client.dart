@@ -156,7 +156,6 @@ class Client {
       onDone: () {
         _closeSocket().then((_) => onDone()).catchError(onError);
       },
-      cancelOnError: true,
     );
   }
 

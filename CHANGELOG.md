@@ -1,6 +1,7 @@
 ## 2.2.0
 
 - Add away-notify support.
+- Fix client connection error handling.
 
 ## 2.1.0
 
