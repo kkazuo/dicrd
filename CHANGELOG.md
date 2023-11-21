@@ -1,3 +1,7 @@
+## 2.2.0
+
+- Add away-notify support.
+
 ## 2.1.0
 
 - Add AWAY support.

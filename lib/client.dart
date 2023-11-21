@@ -223,8 +223,12 @@ class Client {
 
     final data = _encoding.encode(':$_fqun NICK $newNick\r\n');
     _nick = newNick;
+    _broadcastToAllAttendance(data);
+  }
 
+  void _broadcastToAllAttendance(List<int> data, {bool echo = true}) {
     for (final client in _knownClients()) {
+      if (!echo && client == this) continue;
       client.sendRawData(data);
     }
   }
@@ -422,6 +426,7 @@ class Client {
       channel: channel,
       key: chankey.isNotEmpty ? chankey : null,
     );
+    _broadcastMyAwayStatus();
   }
 
   Future<void> _onQuit(Message? event) async {
@@ -703,12 +708,31 @@ class Client {
   void _onAway(Message event) {
     if (!_registered) return;
 
+    var changed = false;
+
     if (event.params.isEmpty) {
+      changed = _awayMsg != null;
       _awayMsg = null;
       sendNumeric(NumericReply.RPL_UNAWAY);
     } else {
+      changed = _awayMsg == null;
       _awayMsg = event.params.first;
       sendNumeric(NumericReply.RPL_NOWAWAY);
+    }
+
+    if (changed) {
+      _broadcastMyAwayStatus();
+    }
+  }
+
+  void _broadcastMyAwayStatus() {
+    final msg = _awayMsg;
+    if (msg == null) {
+      final data = _encoding.encode(':$_fqun AWAY\r\n');
+      _broadcastToAllAttendance(data, echo: false);
+    } else {
+      final data = _encoding.encode(':$_fqun AWAY :$msg\r\n');
+      _broadcastToAllAttendance(data, echo: false);
     }
   }
 
