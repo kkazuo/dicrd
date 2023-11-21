@@ -1,3 +1,7 @@
+## 2.0.0
+
+- Change public API. Use ServerConfig and SocketConfig.
+
 ## 1.3.0
 
 - Add MODE support partialy.

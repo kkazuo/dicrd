@@ -29,6 +29,6 @@ final class FixedStringConnectionAuth implements ConnectionAuth {
       const Duration(seconds: 2),
       () => password == _password,
     );
-    return success ? (true, null) : (false, 'Bad password');
+    return success ? (true, null) : (false, 'Password incorrect');
   }
 }

@@ -40,6 +40,8 @@ enum NumericReply {
   ERR_NOTONCHANNEL(442, "You're not on that channel"),
   ERR_NEEDMOREPARAMS(461, 'Not enough parameters'),
   ERR_ALREADYREGISTRED(462, 'Unauthorized command (already registered)'),
+  ERR_PASSWDMISMATCH(464, 'Password incorrect'),
+  ERR_KEYSET(467, 'Channel key already set'),
   ERR_UNKNOWNMODE(472, 'is unknown mode char to me for <channel>'),
   ERR_BADCHANNELKEY(475, 'Cannot join channel (+k)'),
   ERR_NOCHANMODES(477, "Channel doesn't support modes"),

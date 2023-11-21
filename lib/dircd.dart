@@ -14,38 +14,24 @@ import 'dart:io';
 import 'package:dircd/channel.dart';
 import 'package:dircd/chat_server.dart';
 import 'package:dircd/client.dart';
-import 'package:dircd/connection_auth.dart';
 import 'package:dircd/numeric_reply.dart';
+import 'package:dircd/server_config.dart';
+import 'package:dircd/socket_config.dart';
 
 class Server implements ChatServer {
   final _unregistered = <Client>[];
   final _clients = <String, Client>{};
   final _channels = <String, Channel>{};
   final encoding = const Utf8Codec(allowMalformed: true);
-  final ConnectionAuth connectionAuth;
+  final ServerConfig serverConfig;
 
-  final String? _motdPath;
-
-  Server({
-    String? connectionPassword,
-    ConnectionAuth? connectionAuth,
-    String? motdPath,
-  })  : connectionAuth = connectionAuth ??
-            _fixedServerPassword(connectionPassword) ??
-            ConnectionAuth(),
-        _motdPath = motdPath ?? Platform.environment['IRCD_MOTD'];
-
-  static ConnectionAuth? _fixedServerPassword(String? connectionPassword) {
-    final password =
-        connectionPassword ?? Platform.environment['IRCD_PASSWORD'];
-    return password != null
-        ? FixedStringConnectionAuth(password: password)
-        : null;
-  }
+  Server({ServerConfig? config})
+      : serverConfig = config ?? ServerConfig.withEnvironment();
 
   @override
   authenticate({required nick, required user, password}) =>
-      connectionAuth.authenticate(nick: nick, user: user, password: password);
+      serverConfig.connectionAuth
+          .authenticate(nick: nick, user: user, password: password);
 
   /// Start a server.
   ///
@@ -63,29 +49,17 @@ class Server implements ChatServer {
   ///     -----BEGIN PRIVATE KEY-----
   ///     xyzxyz...
   ///     -----END PRIVATE KEY-----
-  Future<void> run({
-    InternetAddress? address,
-    int? port,
-    int connectionCheckIntervalSeconds = 30,
-    String? privateKeyPath,
-    String? motdPath,
-  }) async {
-    final addr = address ??
-        InternetAddress(Platform.environment['IRCD_HOSTADDR'] ?? '0.0.0.0');
-    final portStr = Platform.environment['IRCD_PORT'];
-    final portNum = port ??
-        (portStr != null ? int.tryParse(portStr, radix: 10) : null) ??
-        6667;
-    final certKeyPath =
-        privateKeyPath ?? Platform.environment['IRCD_PRIVATE_KEY'];
+  Future<void> serve({SocketConfig? socketConfig}) async {
+    final config = socketConfig ?? SocketConfig.withEnvironment();
+    final certKeyPath = config.privateKeyPath;
 
     final ponger = Timer.periodic(
-      Duration(seconds: connectionCheckIntervalSeconds),
+      Duration(seconds: config.connectionCheckIntervalSeconds),
       (_) => _checkClientConnection(DateTime.now()),
     );
 
     if (certKeyPath == null) {
-      final server = await ServerSocket.bind(addr, portNum);
+      final server = await ServerSocket.bind(config.address, config.port);
       _listen(server, ponger);
 
       print(banner);
@@ -95,8 +69,8 @@ class Server implements ChatServer {
         ..useCertificateChain(certKeyPath)
         ..usePrivateKey(certKeyPath);
       final server = await SecureServerSocket.bind(
-        addr,
-        portNum,
+        config.address,
+        config.port,
         securityContext,
       );
       _listen(server, ponger);
@@ -253,7 +227,8 @@ class Server implements ChatServer {
 
   @override
   sendMotd({required to}) async {
-    if (_motdPath == null) {
+    final motdPath = serverConfig.motdPath;
+    if (motdPath == null) {
       // Fallback to default contents.
 
       to.sendMotdStart();
@@ -270,7 +245,7 @@ class Server implements ChatServer {
     }
 
     try {
-      final file = File(_motdPath);
+      final file = File(motdPath);
       final lines = file
           .openRead()
           .transform(const Utf8Decoder())

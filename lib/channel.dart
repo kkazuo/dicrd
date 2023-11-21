@@ -16,11 +16,12 @@ import 'package:dircd/string_ext.dart';
 
 class Channel {
   final String name;
-  final String? key;
+
   final _clients = HashSet<Client>.of([]);
   final _flags = HashSet<String>.of([]);
 
   String? _topic;
+  String? key;
 
   Channel({required this.name, this.key});
 

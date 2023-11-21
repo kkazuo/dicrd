@@ -22,13 +22,14 @@ There is no configuration for now. Just run it.
 
 ### Environment Variables
 
-| Variable Name    |                     | default |
-| ---------------- | ------------------- | ------- |
-| IRCD_HOSTADDR    | listen inet address | 0.0.0.0 |
-| IRCD_PORT        | listen port         | 6667    |
-| IRCD_PRIVATE_KEY | TLS cert file path  |         |
-| IRCD_MOTD        | MOTD file path      |         |
-| IRCD_PASSWORD    | connection password |         |
+| Variable Name            |                           | default |
+| ------------------------ | ------------------------- | ------: |
+| IRCD_HOSTADDR            | listen inet address       | 0.0.0.0 |
+| IRCD_PORT                | listen port               |    6667 |
+| IRCD_PRIVATE_KEY         | TLS cert file path        |         |
+| IRCD_MOTD                | MOTD file path            |         |
+| IRCD_PASSWORD            | connection password       |         |
+| IRCD_CONN_CHECK_INTERVAL | connection liveness check |      30 |
 
 ## Functionality
 

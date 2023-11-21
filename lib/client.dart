@@ -172,7 +172,7 @@ class Client {
     if (_registered) {
       sendNumeric(NumericReply.ERR_ALREADYREGISTRED);
     } else if (event.params.isEmpty) {
-      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
     } else {
       _connectPassword = event.params.first;
     }
@@ -233,7 +233,7 @@ class Client {
       return;
     }
     if (event.params.length < 4) {
-      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
       return;
     }
 
@@ -383,7 +383,7 @@ class Client {
   void _onJoin(Message event) {
     if (!_registered) return;
     if (event.params.isEmpty) {
-      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
       return;
     }
 
@@ -446,7 +446,7 @@ class Client {
   void _onPart(Message event) {
     if (!_registered) return;
     if (event.params.isEmpty) {
-      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
       return;
     }
 
@@ -480,7 +480,7 @@ class Client {
   void _onIson(Message event) {
     if (!_registered) return;
     if (event.params.isEmpty) {
-      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
       return;
     }
 
@@ -565,7 +565,7 @@ class Client {
     if (!_registered) return;
 
     if (event.params.isEmpty) {
-      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
       return;
     }
 
@@ -585,17 +585,58 @@ class Client {
 
     if (event.params.length == 1) {
       final flags = channel.flags;
-      sendNumericWith(NumericReply.RPL_CHANNELMODEIS, [channame, flags]);
+      final key = channel.key;
+      if (key == null) {
+        sendNumericWith(NumericReply.RPL_CHANNELMODEIS, [channame, flags]);
+      } else {
+        sendNumericWith(
+          NumericReply.RPL_CHANNELMODEIS,
+          [channame, '${flags}k', key],
+        );
+      }
       return;
     }
 
     final newFlags = event.params[1];
+    String? newKey;
     var changed = false;
     switch (newFlags) {
       case '+n':
         changed = channel.setFlag('n', on: true);
       case '-n':
         changed = channel.setFlag('n', on: false);
+      case '+k':
+        if (event.params.length != 3) {
+          sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
+          return;
+        }
+        newKey = event.params[2];
+        if (newKey.isEmpty) {
+          sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
+          return;
+        }
+        if (channel.key != null) {
+          sendNumericWith(NumericReply.ERR_KEYSET, [channel.name]);
+          return;
+        }
+        channel.key = newKey;
+        changed = true;
+      case '-k':
+        if (event.params.length != 3) {
+          sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
+          return;
+        }
+        newKey = event.params[2];
+        if (newKey.isEmpty) {
+          sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
+          return;
+        }
+        if (channel.key == null || channel.key != newKey) {
+          sendNumericWith(NumericReply.ERR_KEYSET, [channel.name]);
+          return;
+        }
+        channel.key = null;
+        changed = true;
       default:
         sendNumericWith(NumericReply.ERR_UNKNOWNMODE, [newFlags]);
         return;
@@ -608,14 +649,17 @@ class Client {
     }
 
     final flags = newFlags;
-    final data = _encoding.encode(':$_fqun MODE ${channel.name} $flags\r\n');
+    final more = newKey != null ? ' $newKey' : '';
+    final data = _encoding.encode(
+      ':$_fqun MODE ${channel.name} $flags$more\r\n',
+    );
     channel.broadcast(data, from: this);
   }
 
   void _onTopic(Message event) {
     if (!_registered) return;
     if (event.params.isEmpty) {
-      sendNumeric(NumericReply.ERR_NEEDMOREPARAMS);
+      sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
       return;
     }
 

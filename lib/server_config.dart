@@ -8,8 +8,34 @@
   THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import 'package:dircd/dircd.dart' as dircd;
+import 'dart:io';
 
-void main(List<String> arguments) async {
-  await dircd.Server().serve();
+import 'package:dircd/connection_auth.dart';
+
+class ServerConfig {
+  final ConnectionAuth connectionAuth;
+  final String? motdPath;
+
+  ServerConfig({
+    required this.connectionAuth,
+    this.motdPath,
+  });
+
+  ServerConfig.withFixedPassword(String password, {this.motdPath})
+      : connectionAuth = FixedStringConnectionAuth(password: password);
+
+  ServerConfig.withEnvironment({
+    ConnectionAuth? connectionAuth,
+    String? motdPath,
+  })  : connectionAuth = connectionAuth ?? _defaultAuth(),
+        motdPath = motdPath ?? Platform.environment['IRCD_MOTD'];
+
+  static ConnectionAuth _defaultAuth() {
+    final password = Platform.environment['IRCD_PASSWORD'];
+    if (password != null) {
+      return FixedStringConnectionAuth(password: password);
+    } else {
+      return ConnectionAuth();
+    }
+  }
 }
