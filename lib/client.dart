@@ -140,6 +140,9 @@ class Client {
             return _onMotd(event);
           case 'CAP':
             return _onCap(event);
+          case 'AUTHENTICATE':
+            _onAuthenticate(event);
+            return;
           case 'ERROR':
             return _onError(event);
           default:
@@ -271,6 +274,12 @@ class Client {
 
     if (_capNegotiating) return;
     if (_authenticating) return;
+    if (_registered) {
+      _welcome();
+      _chatServer.sendMotd(to: this);
+      return;
+    }
+
     _authenticating = true;
     final (success, reason) = await _chatServer.authenticate(
       nick: nick,
@@ -326,7 +335,11 @@ class Client {
   }
 
   void sendRawData(List<int> data) {
-    _socket.add(data);
+    try {
+      _socket.add(data);
+    } catch (e) {
+      // Ignore.
+    }
   }
 
   void sendRawString(String text) {
@@ -753,7 +766,7 @@ class Client {
         if (_registered) return;
         return _onCapReq(event);
       case 'END':
-        if (_registered) return;
+        if (!_capNegotiating) return;
         return _onCapEnd(event);
       default:
         sendNumericWith(NumericReply.ERR_INVALIDCAPCMD, [capSubCommand]);
@@ -764,7 +777,7 @@ class Client {
   void _onCapList(Message event, String subCommand) {
     _capNegotiating = true;
 
-    final data = _encoding.encode('CAP $nick $subCommand :\r\n');
+    final data = _encoding.encode('CAP $nick $subCommand :sasl=PLAIN\r\n');
     sendRawData(data);
   }
 
@@ -772,6 +785,13 @@ class Client {
     _capNegotiating = true;
 
     final caps = event.params.lastOrNull ?? '';
+
+    if (caps == 'sasl') {
+      final data = _encoding.encode('CAP $nick ACK :$caps\r\n');
+      sendRawData(data);
+      return;
+    }
+
     final data = _encoding.encode('CAP $nick NAK :$caps\r\n');
     sendRawData(data);
   }
@@ -779,5 +799,80 @@ class Client {
   void _onCapEnd(Message event) {
     _capNegotiating = false;
     _tryRegistration();
+  }
+
+  Future<void> _onAuthenticate(Message event) async {
+    if (_registered) {
+      sendNumeric(NumericReply.ERR_SASLALREADY);
+      return;
+    }
+    if (!_capNegotiating) return;
+
+    if (event.params.isEmpty) {
+      sendNumericWith(NumericReply.ERR_NEEDMOREPARAMS, [event.command]);
+      return;
+    }
+
+    final arg = event.params.first;
+
+    if (arg.toUpperCase() == 'PLAIN') {
+      final data = _encoding.encode('AUTHENTICATE +\r\n');
+      sendRawData(data);
+      return;
+    }
+
+    final tokens = _decodeAuthToken(arg);
+    if (tokens == null) return;
+    final (nickRaw, user, password) = tokens;
+    final nick = nickRaw.toLowerCase();
+
+    _authenticating = true;
+    final (success, _) = await _chatServer.authenticate(
+      nick: nick,
+      user: user,
+      password: password,
+    );
+
+    if (!success) {
+      sendNumeric(NumericReply.ERR_SASLFAILED);
+      await _onQuit(null);
+      return;
+    }
+
+    if (_nick == null && Message.isValidAsNickname(nick)) {
+      _nick = nick;
+    }
+    _user = _user?.withUser(user) ??
+        UserInfo(user: user, mode: '0', realname: user);
+
+    final registered = _chatServer.registerClientWithNick(nick, this);
+    _authenticating = false;
+
+    if (!registered) {
+      // the Nick is in use.
+      sendNumericWith(NumericReply.ERR_NICKNAMEINUSE, [nick]);
+      return;
+    }
+
+    _registered = true;
+    sendNumericWith(NumericReply.RPL_LOGGEDIN, [_fqun, nick]);
+    sendNumeric(NumericReply.RPL_SASLSUCCESS);
+  }
+
+  (String, String, String)? _decodeAuthToken(String source) {
+    try {
+      final bytes = base64.decode(source);
+      final i0 = bytes.indexOf(0);
+      final i1 = bytes.indexOf(0, i0 + 1);
+      if (i0 == -1 || i1 == -1) {
+        return null;
+      }
+      final nick = utf8.decode(bytes.sublist(0, i0), allowMalformed: true);
+      final user = utf8.decode(bytes.sublist(i0, i1), allowMalformed: true);
+      final pass = utf8.decode(bytes.sublist(i1), allowMalformed: true);
+      return (nick, user, pass);
+    } catch (_) {
+      return null;
+    }
   }
 }

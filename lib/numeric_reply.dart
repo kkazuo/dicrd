@@ -48,6 +48,15 @@ enum NumericReply {
   ERR_UNKNOWNMODE(472, 'is unknown mode char to me for <channel>'),
   ERR_BADCHANNELKEY(475, 'Cannot join channel (+k)'),
   ERR_NOCHANMODES(477, "Channel doesn't support modes"),
+  RPL_LOGGEDIN(900, 'You are now logged in.'),
+  RPL_LOGGEDOUT(901, 'You are now logged out.'),
+  ERR_NICKLOCKED(902, 'You must use a nick assigned to you.'),
+  RPL_SASLSUCCESS(903, 'SASL authentication successful'),
+  ERR_SASLFAILED(904, 'SASL authentication failed'),
+  ERR_SASLTOOLONG(905, 'SASL message too long'),
+  ERR_SASLABORTED(906, 'SASL authentication aborted'),
+  ERR_SASLALREADY(907, 'You have already completed SASL authentication'),
+  RPL_SASLMECHS(908, 'are available SASL mechanisms'),
   ;
 
   final int code;

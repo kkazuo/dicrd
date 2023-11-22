@@ -1,3 +1,7 @@
+## 2.4.0
+
+- Support SASL PLAIN authentication.
+
 ## 2.3.0
 
 - Change default bind address to Any IPv6.

@@ -14,4 +14,7 @@ class UserInfo {
   final String realname;
 
   UserInfo({required this.user, required this.mode, required this.realname});
+
+  UserInfo withUser(String user) =>
+      UserInfo(user: user, mode: mode, realname: realname);
 }

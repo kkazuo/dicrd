@@ -52,7 +52,7 @@ There is no configuration for now. Just run it.
 - [x] CAP capabilities negotiation mechanism.
 - [x] PASS authentication with fixed string.
 - [x] PASS authentication with custom subclassing.
-- [ ] SASL authentication.
+- [x] SASL authentication.
 - [ ] Flood control.
 - [ ] Server-Server communications. (currently out of scope.)
 
