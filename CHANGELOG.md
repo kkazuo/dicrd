@@ -1,3 +1,7 @@
+## 2.4.1
+
+- Fix SASL auth flow.
+
 ## 2.4.0
 
 - Support SASL PLAIN authentication.

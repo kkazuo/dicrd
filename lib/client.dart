@@ -35,6 +35,7 @@ class Client {
 
   bool _registered = false;
   bool _authenticating = false;
+  bool _authenticated = false;
   bool _capNegotiating = false;
   String? _connectPassword;
   String? _nick;
@@ -274,28 +275,24 @@ class Client {
 
     if (_capNegotiating) return;
     if (_authenticating) return;
-    if (_registered) {
-      _welcome();
-      _chatServer.sendMotd(to: this);
-      return;
-    }
+    if (!_authenticated) {
+      _authenticating = true;
+      final (success, reason) = await _chatServer.authenticate(
+        nick: nick,
+        user: user,
+        password: _connectPassword,
+      );
+      _connectPassword = null;
 
-    _authenticating = true;
-    final (success, reason) = await _chatServer.authenticate(
-      nick: nick,
-      user: user,
-      password: _connectPassword,
-    );
-    _connectPassword = null;
-
-    if (!success) {
-      final details = reason != null ? ' :$reason' : '';
-      final data = _encoding.encode('ERROR :Authentication Failed:'
-          ' nick=$nick user=$user'
-          '$details\r\n');
-      sendRawData(data);
-      await _onQuit(null);
-      return;
+      if (!success) {
+        final details = reason != null ? ' :$reason' : '';
+        final data = _encoding.encode('ERROR :Authentication Failed:'
+            ' nick=$nick user=$user'
+            '$details\r\n');
+        sendRawData(data);
+        await _onQuit(null);
+        return;
+      }
     }
 
     final registered = _chatServer.registerClientWithNick(nick, this);
@@ -802,7 +799,7 @@ class Client {
   }
 
   Future<void> _onAuthenticate(Message event) async {
-    if (_registered) {
+    if (_registered || _authenticated) {
       sendNumeric(NumericReply.ERR_SASLALREADY);
       return;
     }
@@ -815,23 +812,36 @@ class Client {
 
     final arg = event.params.first;
 
-    if (arg.toUpperCase() == 'PLAIN') {
-      final data = _encoding.encode('AUTHENTICATE +\r\n');
-      sendRawData(data);
+    if (!_authenticating) {
+      final mech = arg.toUpperCase();
+      if (mech == 'PLAIN') {
+        _authenticating = true;
+        final data = _encoding.encode('AUTHENTICATE +\r\n');
+        sendRawData(data);
+        return;
+      }
+
+      sendNumericWith(NumericReply.RPL_SASLMECHS, ['PLAIN']);
       return;
     }
 
     final tokens = _decodeAuthToken(arg);
-    if (tokens == null) return;
+    if (tokens == null) {
+      sendNumeric(NumericReply.ERR_SASLABORTED);
+      await _onQuit(null);
+      return;
+    }
+
     final (nickRaw, user, password) = tokens;
     final nick = nickRaw.toLowerCase();
 
-    _authenticating = true;
     final (success, _) = await _chatServer.authenticate(
       nick: nick,
       user: user,
       password: password,
     );
+    _authenticated = success;
+    _authenticating = false;
 
     if (!success) {
       sendNumeric(NumericReply.ERR_SASLFAILED);
@@ -845,16 +855,6 @@ class Client {
     _user = _user?.withUser(user) ??
         UserInfo(user: user, mode: '0', realname: user);
 
-    final registered = _chatServer.registerClientWithNick(nick, this);
-    _authenticating = false;
-
-    if (!registered) {
-      // the Nick is in use.
-      sendNumericWith(NumericReply.ERR_NICKNAMEINUSE, [nick]);
-      return;
-    }
-
-    _registered = true;
     sendNumericWith(NumericReply.RPL_LOGGEDIN, [_fqun, nick]);
     sendNumeric(NumericReply.RPL_SASLSUCCESS);
   }
